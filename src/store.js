@@ -3,10 +3,14 @@ import devtoolPlugin from './plugins/devtool'
 import ModuleCollection from './module/module-collection'
 import { forEachValue, isObject, isPromise, assert } from './util'
 
+//定义局部 Vue 变量，用于判断是否已经装载和减少全局作用域查找
 let Vue // bind on install
 
 export class Store {
   constructor (options = {}) {
+    //已经执行安装函数进行装载；
+    //支持Promise语法
+    //必须用new操作符
     if (process.env.NODE_ENV !== 'production') {
       assert(Vue, `must call Vue.use(Vuex) before creating a store instance.`)
       assert(typeof Promise !== 'undefined', `vuex requires a Promise polyfill in this browser.`)
@@ -26,18 +30,21 @@ export class Store {
     }
 
     // store internal state
+    //是否正在commit
     this._committing = false
     this._actions = Object.create(null)
     this._mutations = Object.create(null)
     this._wrappedGetters = Object.create(null)
-    this._modules = new ModuleCollection(options)
-    this._modulesNamespaceMap = Object.create(null)
-    this._subscribers = []
-    this._watcherVM = new Vue()
+    this._modules = new ModuleCollection(options) // Vuex支持store分模块传入，存储分析后的modules
+    this._modulesNamespaceMap = Object.create(null)  // 模块命名空间map
+    this._subscribers = []   // 订阅函数集合，Vuex提供了subscribe功能
+    this._watcherVM = new Vue()  // Vue组件用于watch监视变化
 
     // bind commit and dispatch to self
     const store = this
     const { dispatch, commit } = this
+
+    //封装替换原型中的dispatch和commit方法，将this指向当前store对象,当该方法不适用store调用时，this仍然指向store
     this.dispatch = function boundDispatch (type, payload) {
       return dispatch.call(store, type, payload)
     }
@@ -119,6 +126,7 @@ export class Store {
       }
       return
     }
+    //逐个执行action
     return entry.length > 1
       ? Promise.all(entry.map(handler => handler(payload)))
       : entry[0](payload)
@@ -184,10 +192,18 @@ export class Store {
     resetStore(this, true)
   }
 
+/**
+ * 
+ * 缓存执行时的committing状态将当前状态设置为true后进行本次提交操作，待操作完毕后，将committing状态还原为之前的状态
+ */
   _withCommit (fn) {
+    // 保存之前的提交状态
     const committing = this._committing
+     // 进行本次提交，若不设置为true，直接修改state，strict模式下，Vuex将会产生非法修改state的警告
     this._committing = true
+    // 执行state的修改操作
     fn()
+    // 修改完成，还原本次修改之前的状态
     this._committing = committing
   }
 }
@@ -268,8 +284,10 @@ function installModule (store, rootState, path, module, hot) {
     })
   }
 
+  //创建命名空间下的context对象，包括state，getter，dispatch，commit
   const local = module.context = makeLocalContext(store, namespace, path)
 
+  //mutations、actions以及getters注册
   module.forEachMutation((mutation, key) => {
     const namespacedType = namespace + key
     registerMutation(store, namespacedType, mutation, local)
@@ -285,6 +303,7 @@ function installModule (store, rootState, path, module, hot) {
     registerGetter(store, namespacedType, getter, local)
   })
 
+  //递归安装子module
   module.forEachChild((child, key) => {
     installModule(store, rootState, path.concat(key), child, hot)
   })
@@ -304,6 +323,7 @@ function makeLocalContext (store, namespace, path) {
       let { type } = args
 
       if (!options || !options.root) {
+        //在type前面加上namespace，只触发该namespace的actions
         type = namespace + type
         if (process.env.NODE_ENV !== 'production' && !store._actions[type]) {
           console.error(`[vuex] unknown local action type: ${args.type}, global type: ${type}`)
@@ -320,6 +340,7 @@ function makeLocalContext (store, namespace, path) {
       let { type } = args
 
       if (!options || !options.root) {
+         //在type前面加上namespace，只触发该namespace的mutation
         type = namespace + type
         if (process.env.NODE_ENV !== 'production' && !store._mutations[type]) {
           console.error(`[vuex] unknown local mutation type: ${args.type}, global type: ${type}`)
@@ -373,6 +394,7 @@ function makeLocalGetters (store, namespace) {
 function registerMutation (store, type, handler, local) {
   const entry = store._mutations[type] || (store._mutations[type] = [])
   entry.push(function wrappedMutationHandler (payload) {
+    //调用mutation的时候用的是局部的state
     handler(local.state, payload)
   })
 }
@@ -403,6 +425,7 @@ function registerAction (store, type, handler, local) {
 }
 
 function registerGetter (store, type, rawGetter, local) {
+  //getter不是数组，是唯一的函数，action和mutation是数组
   if (store._wrappedGetters[type]) {
     if (process.env.NODE_ENV !== 'production') {
       console.error(`[vuex] duplicate getter key: ${type}`)
@@ -427,12 +450,15 @@ function enableStrictMode (store) {
   }, { deep: true, sync: true })
 }
 
+//根据path获取state状态
 function getNestedState (state, path) {
   return path.length
     ? path.reduce((state, key) => state[key], state)
     : state
 }
 
+ //先进行参数的适配处理 
+//可以只传一个对象参数，对象中有type，对象本身是payload     obj   options
 function unifyObjectStyle (type, payload, options) {
   if (isObject(type) && type.type) {
     options = payload
@@ -461,6 +487,7 @@ export function install (_Vue) {
 }
 
 // auto install in dist mode
+//如果window上有Vue则自动安装
 if (typeof window !== 'undefined' && window.Vue) {
   install(window.Vue)
 }

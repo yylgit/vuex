@@ -7,6 +7,7 @@ export default class ModuleCollection {
     this.register([], rawRootModule, false)
   }
 
+  //根据path获取module，例如path为['a']，获取到a的module
   get (path) {
     return path.reduce((module, key) => {
       return module.getChild(key)
@@ -25,27 +26,32 @@ export default class ModuleCollection {
     update([], this.root, rawRootModule)
   }
 
+
+  //递归调用register，构造了一个module树
   register (path, rawModule, runtime = true) {
     if (process.env.NODE_ENV !== 'production') {
       assertRawModule(path, rawModule)
     }
 
     const newModule = new Module(rawModule, runtime)
+    //根module
     if (path.length === 0) {
       this.root = newModule
     } else {
+      //挂到父级module
       const parent = this.get(path.slice(0, -1))
       parent.addChild(path[path.length - 1], newModule)
     }
 
     // register nested modules
+    //子module
     if (rawModule.modules) {
       forEachValue(rawModule.modules, (rawChildModule, key) => {
         this.register(path.concat(key), rawChildModule, runtime)
       })
     }
   }
-
+  
   unregister (path) {
     const parent = this.get(path.slice(0, -1))
     const key = path[path.length - 1]
