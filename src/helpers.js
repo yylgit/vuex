@@ -70,12 +70,14 @@ export const mapActions = normalizeNamespace((namespace, actions) => {
   return res
 })
 
+//兼容数组和对象
 function normalizeMap (map) {
   return Array.isArray(map)
     ? map.map(key => ({ key, val: key }))
     : Object.keys(map).map(key => ({ key, val: map[key] }))
 }
 
+//兼容是否带namespace
 function normalizeNamespace (fn) {
   return (namespace, map) => {
     if (typeof namespace !== 'string') {

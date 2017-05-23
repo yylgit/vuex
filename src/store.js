@@ -276,6 +276,7 @@ function installModule (store, rootState, path, module, hot) {
   }
 
   // set state
+  //注册state
   if (!isRoot && !hot) {
     const parentState = getNestedState(rootState, path.slice(0, -1))
     const moduleName = path[path.length - 1]
