@@ -68,10 +68,12 @@ export class Store {
     plugins.concat(devtoolPlugin).forEach(plugin => plugin(this))
   }
 
+  //<3>取得this._vm._data.$$state
   get state () {
     return this._vm._data.$$state
   }
-
+ 
+  //不能直接给state赋值
   set state (v) {
     if (process.env.NODE_ENV !== 'production') {
       assert(false, `Use store.replaceState() to explicit replace store state.`)
@@ -229,9 +231,10 @@ function resetStoreVM (store, state, hot) {
   const computed = {}
   forEachValue(wrappedGetters, (fn, key) => {
     // use computed to leverage its lazy-caching mechanism
+    //将getter存到computed对象中，然后给_vm，利用的vm计算属性的缓存机制
     computed[key] = () => fn(store)
     Object.defineProperty(store.getters, key, {
-      get: () => store._vm[key],
+      get: () => store._vm[key],//store的getters取_vm的计算属性
       enumerable: true // for local getters
     })
   })
@@ -361,6 +364,7 @@ function makeLocalContext (store, namespace, path) {
         ? () => store.getters
         : () => makeLocalGetters(store, namespace)
     },
+    //<2>local的state还是从store中取的state
     state: {
       get: () => getNestedState(store.state, path)
     }
@@ -395,7 +399,7 @@ function makeLocalGetters (store, namespace) {
 function registerMutation (store, type, handler, local) {
   const entry = store._mutations[type] || (store._mutations[type] = [])
   entry.push(function wrappedMutationHandler (payload) {
-    //调用mutation的时候用的是局部的state
+    //调用mutation的时候用的是局部的state，最终改变state的地方。<1>
     handler(local.state, payload)
   })
 }
