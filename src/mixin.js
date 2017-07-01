@@ -22,14 +22,18 @@ export default function (Vue) {
 
   /**
    * Vuex init hook, injected into each instances init hooks list.
-   * 将初始化Vue根组件时传入的store设置到this对象的$store属性上，子组件从其父组件引用$store属性，层层嵌套进行设置。在任意组件中执行 this.$store 都能找到装载的那个store对象
+   * 初始化Vue根组件时传入的store设置到this.$store属性上，
+   * 子组件从其父组件引用$store属性，层层嵌套进行设置。
+   * 在任意组件中执行 this.$store 都能找到装载的那个store对象
    */
 
   function vuexInit () {
     const options = this.$options
     // store injection
     if (options.store) {
+      //根组件
       this.$store = options.store
+      //子组件
     } else if (options.parent && options.parent.$store) {
       this.$store = options.parent.$store
     }

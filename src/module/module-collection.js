@@ -7,13 +7,13 @@ export default class ModuleCollection {
     this.register([], rawRootModule, false)
   }
 
-  //根据path获取module，例如path为['a']，获取到a的module
+  //根据path从模块树上获取module，例如path为['a']，获取到a的module
   get (path) {
     return path.reduce((module, key) => {
       return module.getChild(key)
     }, this.root)
   }
-
+  //获取模块树上某一个模块的命名空间，如果所有模块的namespaced都为true，那么得到的命名空间就和path相同
   getNamespace (path) {
     let module = this.root
     return path.reduce((namespace, key) => {
@@ -21,13 +21,16 @@ export default class ModuleCollection {
       return namespace + (module.namespaced ? key + '/' : '')
     }, '')
   }
-
+  //递归更新整个模块树
   update (rawRootModule) {
     update([], this.root, rawRootModule)
   }
 
 
-  //递归调用register，构造了一个module树
+  /**
+   *根据path和参数，构造模块，并且根据path挂载到root
+   *指向的模块树上，然后遍历参数的modules对象，递归调用register。
+   */
   register (path, rawModule, runtime = true) {
     if (process.env.NODE_ENV !== 'production') {
       assertRawModule(path, rawModule)
@@ -51,7 +54,7 @@ export default class ModuleCollection {
       })
     }
   }
-  
+  //根据path从模块树上卸载模块
   unregister (path) {
     const parent = this.get(path.slice(0, -1))
     const key = path[path.length - 1]
