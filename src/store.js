@@ -208,7 +208,7 @@ export class Store {
 
 /**
  * 
- * 缓存执行时的committing状态将当前状态设置为true后进行本次提交操作，待操作完毕后，将committing状态还原为之前的状态
+ * 保存执行时的committing状态将当前状态设置为true后进行本次提交操作，待操作完毕后，将committing状态还原为之前的状态
  */
   _withCommit (fn) {
     // 保存之前的提交状态
@@ -303,6 +303,8 @@ function installModule (store, rootState, path, module, hot) {
     const moduleName = path[path.length - 1]
     //把模块的state设置在rootState树上
     store._withCommit(() => {
+      //用Vue.set的原因是rootState最终设置成了vm对象的data属性，所以新添加的状态
+      //要想是响应的就应该用Vue.set
       Vue.set(parentState, moduleName, module.state)
     })
   }
@@ -485,6 +487,7 @@ function registerGetter (store, type, rawGetter, local) {
   }
 }
 
+//
 function enableStrictMode (store) {
   store._vm.$watch(function () { return this._data.$$state }, () => {
     if (process.env.NODE_ENV !== 'production') {
@@ -502,7 +505,6 @@ function getNestedState (state, path) {
 
  //参数的适配处理 
 //可以只传一个对象参数，对象中有type，对象本身是payload,第二个参数是options
-
 function unifyObjectStyle (type, payload, options) {
   if (isObject(type) && type.type) {
     options = payload
