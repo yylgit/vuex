@@ -230,6 +230,7 @@ function resetStore (store, hot) {
   store._modulesNamespaceMap = Object.create(null)
   const state = store.state
   // init all modules
+  //state没有变，installModule的第五个参数为true，不会重置state
   installModule(store, state, [], store._modules.root, true)
   // reset vm
   resetStoreVM(store, state, hot)

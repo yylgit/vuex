@@ -30,6 +30,7 @@ export const mapMutations = normalizeNamespace((namespace, mutations) => {
       if (namespace && !getModuleByNamespace(this.$store, 'mapMutations', namespace)) {
         return
       }
+      //调用commit方法执行mutation
       return this.$store.commit.apply(this.$store, [val].concat(args))
     }
   })
@@ -64,13 +65,14 @@ export const mapActions = normalizeNamespace((namespace, actions) => {
       if (namespace && !getModuleByNamespace(this.$store, 'mapActions', namespace)) {
         return
       }
+      //调用dispatch方法执行action
       return this.$store.dispatch.apply(this.$store, [val].concat(args))
     }
   })
   return res
 })
 
-//兼容数组和对象
+//兼容数组和对象为{key,val}
 function normalizeMap (map) {
   return Array.isArray(map)
     ? map.map(key => ({ key, val: key }))
@@ -90,6 +92,7 @@ function normalizeNamespace (fn) {
   }
 }
 
+//根据命名空间获取模块
 function getModuleByNamespace (store, helper, namespace) {
   const module = store._modulesNamespaceMap[namespace]
   if (process.env.NODE_ENV !== 'production' && !module) {
